@@ -16,6 +16,8 @@ describe("networks", () => {
       expect(config.rpcUrl.length).toBeGreaterThan(0);
       expect(config.ensParentDomain).toBeTypeOf("string");
       expect(config.ensParentDomain.length).toBeGreaterThan(0);
+      expect(config.nameWrapperAddress).toBeTypeOf("string");
+      expect(config.ensResolverAddress).toBeTypeOf("string");
     }
   });
 
