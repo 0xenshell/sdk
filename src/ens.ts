@@ -1,11 +1,9 @@
-import { Contract, namehash, keccak256, toUtf8Bytes, type Signer } from "ethers";
+import { Contract, namehash, type Signer } from "ethers";
 import { NETWORK_CONFIG, type Network } from "./networks.js";
 
-const ENS_REGISTRY = "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e";
-
-const ENS_REGISTRY_ABI = [
-  "function setSubnodeRecord(bytes32 node, bytes32 label, address owner, address resolver, uint64 ttl)",
-  "function owner(bytes32 node) view returns (address)",
+const NAME_WRAPPER_ABI = [
+  "function setSubnodeRecord(bytes32 parentNode, string label, address owner, address resolver, uint64 ttl, uint32 fuses, uint64 expiry) returns (bytes32)",
+  "function ownerOf(uint256 id) view returns (address)",
 ] as const;
 
 /**
@@ -21,10 +19,11 @@ export function computeEnsNode(agentId: string, network: Network): string {
 
 /**
  * Create an ENS subdomain for an agent under the parent domain.
- * Creates `{agentId}.{parentDomain}` via the ENS Registry.
+ * Creates `{agentId}.{parentDomain}` via the ENS NameWrapper.
  *
+ * Requires the parent name to be wrapped in the NameWrapper.
  * The subdomain is owned by the signer and uses the network's ENS resolver.
- * Throws a clear error if the subdomain creation fails.
+ * Throws a clear error if the subdomain already exists.
  */
 export async function createSubdomain(
   agentId: string,
@@ -33,26 +32,38 @@ export async function createSubdomain(
 ): Promise<void> {
   const config = NETWORK_CONFIG[network];
   const parentNode = namehash(config.ensParentDomain);
-  const labelHash = keccak256(toUtf8Bytes(agentId));
   const signerAddress = await signer.getAddress();
 
-  const registry = new Contract(ENS_REGISTRY, ENS_REGISTRY_ABI, signer);
+  const nameWrapper = new Contract(
+    config.nameWrapperAddress,
+    NAME_WRAPPER_ABI,
+    signer,
+  );
 
-  // Check if subdomain already has an owner
+  // Check if subdomain already exists in NameWrapper
   const subdomainNode = computeEnsNode(agentId, network);
-  const existingOwner = await registry.owner(subdomainNode);
-  if (existingOwner !== "0x0000000000000000000000000000000000000000") {
-    const domain = `${agentId}.${config.ensParentDomain}`;
-    throw new Error(`ENS subdomain '${domain}' already exists (owner: ${existingOwner})`);
+  try {
+    const existingOwner = await nameWrapper.ownerOf(subdomainNode);
+    if (existingOwner !== "0x0000000000000000000000000000000000000000") {
+      const domain = `${agentId}.${config.ensParentDomain}`;
+      throw new Error(`ENS subdomain '${domain}' already exists (owner: ${existingOwner})`);
+    }
+  } catch (err: any) {
+    // ownerOf reverts for non-existent tokens, which means the subdomain doesn't exist - that's fine
+    if (err.message?.includes("already exists")) throw err;
   }
 
+  const maxExpiry = BigInt("18446744073709551615"); // max uint64
+
   try {
-    const tx = await registry.setSubnodeRecord(
+    const tx = await nameWrapper.setSubnodeRecord(
       parentNode,
-      labelHash,
+      agentId,
       signerAddress,
       config.ensResolverAddress,
-      0, // ttl
+      0,      // ttl
+      0,      // fuses (no restrictions)
+      maxExpiry,
     );
     await tx.wait();
   } catch (err: any) {
