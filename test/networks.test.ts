@@ -14,11 +14,19 @@ describe("networks", () => {
       expect(config.chainId).toBeTypeOf("number");
       expect(config.rpcUrl).toBeTypeOf("string");
       expect(config.rpcUrl.length).toBeGreaterThan(0);
+      expect(config.ensParentDomain).toBeTypeOf("string");
+      expect(config.ensParentDomain.length).toBeGreaterThan(0);
     }
   });
 
   it("has correct chain IDs", () => {
     expect(NETWORK_CONFIG[Network.MAINNET].chainId).toBe(1);
     expect(NETWORK_CONFIG[Network.SEPOLIA].chainId).toBe(11155111);
+  });
+
+  it("has Sepolia firewall address configured", () => {
+    expect(NETWORK_CONFIG[Network.SEPOLIA].firewallAddress).toBe(
+      "0xf3Bd9464B04a4f44337443144F9241C379d357bb",
+    );
   });
 });

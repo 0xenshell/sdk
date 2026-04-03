@@ -3,6 +3,8 @@ export type { NetworkConfig } from "./networks.js";
 
 export { AGENT_FIREWALL_ABI, getFirewallContract } from "./contract.js";
 
+export { computeEnsNode } from "./ens.js";
+
 export { ENShell } from "./client.js";
 
 export { ActionStatus } from "./types.js";

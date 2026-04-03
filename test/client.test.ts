@@ -14,7 +14,7 @@ describe("ENShell client", () => {
     expect(
       () =>
         new ENShell({
-          network: Network.SEPOLIA,
+          network: Network.MAINNET,
           signer,
         }),
     ).toThrow("No contract address configured");
