@@ -1,7 +1,7 @@
 import { Contract, parseEther } from "ethers";
 import { getFirewallContract } from "./contract.js";
 import { NETWORK_CONFIG } from "./networks.js";
-import { computeEnsNode } from "./ens.js";
+import { computeEnsNode, createSubdomain } from "./ens.js";
 import type {
   ENShellConfig,
   Agent,
@@ -37,16 +37,28 @@ export class ENShell {
     agentId: string,
     options: RegisterAgentOptions,
   ): Promise<void> {
+    // 1. Create ENS subdomain (e.g. trader.enshell.eth)
+    await createSubdomain(agentId, this.config.network, this.config.signer);
+
+    // 2. Register agent on the firewall contract
     const ensNode = computeEnsNode(agentId, this.config.network);
 
-    const tx = await this.contract.registerAgentSimple(
-      agentId,
-      ensNode,
-      options.agentAddress,
-      parseEther(options.spendLimit),
-    );
-    await tx.wait();
+    try {
+      const tx = await this.contract.registerAgentSimple(
+        agentId,
+        ensNode,
+        options.agentAddress,
+        parseEther(options.spendLimit),
+      );
+      await tx.wait();
+    } catch (err: any) {
+      if (err.message?.includes("Agent already registered")) {
+        throw new Error(`Agent "${agentId}" is already registered`);
+      }
+      throw err;
+    }
 
+    // 3. Set allowed targets if provided
     if (options.allowedTargets && options.allowedTargets.length > 0) {
       const targetTx = await this.contract.setAllowedTargets(
         agentId,
