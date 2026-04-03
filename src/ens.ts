@@ -50,12 +50,16 @@ export async function createSubdomain(
   try {
     const existingOwner = await nameWrapper.ownerOf(subdomainNode);
     if (existingOwner !== "0x0000000000000000000000000000000000000000") {
+      // If the signer already owns it, skip creation (idempotent)
+      if (existingOwner.toLowerCase() === signerAddress.toLowerCase()) {
+        return;
+      }
       const domain = `${agentId}.${config.ensParentDomain}`;
-      throw new Error(`ENS subdomain '${domain}' already exists (owner: ${existingOwner})`);
+      throw new Error(`ENS subdomain '${domain}' is owned by another address (${existingOwner})`);
     }
   } catch (err: any) {
     // ownerOf reverts for non-existent tokens, which means the subdomain doesn't exist - that's fine
-    if (err.message?.includes("already exists")) throw err;
+    if (err.message?.includes("owned by another") || err.message?.includes("already exists")) throw err;
   }
 
   const maxExpiry = BigInt("18446744073709551615"); // max uint64
