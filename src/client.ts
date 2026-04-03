@@ -1,6 +1,7 @@
 import { Contract, parseEther } from "ethers";
 import { getFirewallContract } from "./contract.js";
 import { NETWORK_CONFIG } from "./networks.js";
+import { computeEnsNode } from "./ens.js";
 import type {
   ENShellConfig,
   Agent,
@@ -36,9 +37,11 @@ export class ENShell {
     agentId: string,
     options: RegisterAgentOptions,
   ): Promise<void> {
+    const ensNode = computeEnsNode(agentId, this.config.network);
+
     const tx = await this.contract.registerAgentSimple(
       agentId,
-      options.ensNode,
+      ensNode,
       options.agentAddress,
       parseEther(options.spendLimit),
     );

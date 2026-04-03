@@ -17,7 +17,6 @@ export interface Agent {
 export interface RegisterAgentOptions {
   agentAddress: string;
   spendLimit: string;
-  ensNode: string;
   allowedTargets?: string[];
 }
 
