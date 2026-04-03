@@ -6,6 +6,10 @@ const NAME_WRAPPER_ABI = [
   "function ownerOf(uint256 id) view returns (address)",
 ] as const;
 
+const RESOLVER_ABI = [
+  "function setText(bytes32 node, string key, string value)",
+] as const;
+
 /**
  * Compute the ENS node (namehash) for an agent ID.
  * Produces the namehash of `{agentId}.{parentDomain}`.
@@ -19,7 +23,8 @@ export function computeEnsNode(agentId: string, network: Network): string {
 
 /**
  * Create an ENS subdomain for an agent under the parent domain.
- * Creates `{agentId}.{parentDomain}` via the ENS NameWrapper.
+ * Creates `{agentId}.{parentDomain}` via the ENS NameWrapper,
+ * then sets the default avatar text record on the subdomain.
  *
  * Requires the parent name to be wrapped in the NameWrapper.
  * The subdomain is owned by the signer and uses the network's ENS resolver.
@@ -71,5 +76,16 @@ export async function createSubdomain(
     throw new Error(
       `Failed to create ENS subdomain '${domain}': ${err.reason || err.message}`,
     );
+  }
+
+  // Set default avatar on the subdomain
+  if (config.ensDefaultAvatar) {
+    const resolver = new Contract(
+      config.ensResolverAddress,
+      RESOLVER_ABI,
+      signer,
+    );
+    const avatarTx = await resolver.setText(subdomainNode, "avatar", config.ensDefaultAvatar);
+    await avatarTx.wait();
   }
 }
