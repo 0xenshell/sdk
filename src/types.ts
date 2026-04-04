@@ -75,4 +75,5 @@ export interface ENShellConfig {
   network: Network;
   signer: Signer;
   contractAddress?: string;
+  rpcUrl?: string;
 }
