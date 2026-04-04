@@ -46,6 +46,22 @@ export interface QueuedAction {
   decision: number;
 }
 
+// -- Analysis --
+
+export interface AnalysisResult {
+  score: number;
+  decision: number;
+  reasoning: string;
+  instruction: string;
+  target: string;
+  agentId: string;
+}
+
+export interface ResolutionResult {
+  decision: ActionDecision;
+  analysis?: AnalysisResult;
+}
+
 // -- Protect --
 
 export interface ProtectOptions {
@@ -67,7 +83,7 @@ export interface ProtectResult {
     data: string;
   };
   /** Wait for the CRE oracle to resolve the action. Polls the contract. */
-  waitForResolution: () => Promise<ActionDecision>;
+  waitForResolution: () => Promise<ResolutionResult>;
 }
 
 // -- Client config --
