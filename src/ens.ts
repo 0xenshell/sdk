@@ -34,7 +34,7 @@ export async function createSubdomain(
   agentId: string,
   network: Network,
   signer: Signer,
-): Promise<void> {
+): Promise<{ txHash: string }> {
   const config = NETWORK_CONFIG[network];
   const parentNode = namehash(config.ensParentDomain);
   const signerAddress = await signer.getAddress();
@@ -52,7 +52,7 @@ export async function createSubdomain(
     if (existingOwner !== "0x0000000000000000000000000000000000000000") {
       // If the signer already owns it, skip creation (idempotent)
       if (existingOwner.toLowerCase() === signerAddress.toLowerCase()) {
-        return;
+        return { txHash: "" };
       }
       const domain = `${agentId}.${config.ensParentDomain}`;
       throw new Error(`ENS subdomain '${domain}' is owned by another address (${existingOwner})`);
@@ -64,6 +64,7 @@ export async function createSubdomain(
 
   const maxExpiry = BigInt("18446744073709551615"); // max uint64
 
+  let txHash: string;
   try {
     const tx = await nameWrapper.setSubnodeRecord(
       parentNode,
@@ -74,7 +75,8 @@ export async function createSubdomain(
       0,      // fuses (no restrictions)
       maxExpiry,
     );
-    await tx.wait();
+    const receipt = await tx.wait();
+    txHash = receipt.hash;
   } catch (err: any) {
     const domain = `${agentId}.${config.ensParentDomain}`;
     throw new Error(
@@ -92,4 +94,6 @@ export async function createSubdomain(
     const avatarTx = await resolver.setText(subdomainNode, "avatar", config.ensDefaultAvatar);
     await avatarTx.wait();
   }
+
+  return { txHash };
 }

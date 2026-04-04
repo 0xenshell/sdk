@@ -44,17 +44,18 @@ export class ENShell {
   async registerAgent(
     agentId: string,
     options: RegisterAgentOptions,
-  ): Promise<void> {
-    await this.createAgentSubdomain(agentId);
-    await this.registerAgentOnChain(agentId, options);
+  ): Promise<{ ensTxHash: string; firewallTxHash: string }> {
+    const ens = await this.createAgentSubdomain(agentId);
+    const firewall = await this.registerAgentOnChain(agentId, options);
+    return { ensTxHash: ens.txHash, firewallTxHash: firewall.txHash };
   }
 
   /**
    * Create the ENS subdomain for an agent (e.g. trader.enshell.eth).
    * Sets the default avatar text record on the subdomain.
    */
-  async createAgentSubdomain(agentId: string): Promise<void> {
-    await createSubdomain(agentId, this.config.network, this.config.signer);
+  async createAgentSubdomain(agentId: string): Promise<{ txHash: string }> {
+    return createSubdomain(agentId, this.config.network, this.config.signer);
   }
 
   /**
@@ -65,9 +66,10 @@ export class ENShell {
   async registerAgentOnChain(
     agentId: string,
     options: RegisterAgentOptions,
-  ): Promise<void> {
+  ): Promise<{ txHash: string }> {
     const ensNode = computeEnsNode(agentId, this.config.network);
 
+    let txHash: string;
     try {
       const tx = await this.contract.registerAgentSimple(
         agentId,
@@ -75,7 +77,8 @@ export class ENShell {
         options.agentAddress,
         parseEther(options.spendLimit),
       );
-      await tx.wait();
+      const receipt = await tx.wait();
+      txHash = receipt.hash;
     } catch (err: any) {
       if (err.message?.includes("Agent already registered")) {
         throw new Error(`Agent "${agentId}" is already registered`);
@@ -107,6 +110,8 @@ export class ENShell {
         // Relay is optional - don't fail registration if relay is down
       }
     }
+
+    return { txHash };
   }
 
   async getAgent(agentId: string): Promise<Agent> {
@@ -127,14 +132,16 @@ export class ENShell {
     return this.contract.getAgentCount();
   }
 
-  async deactivateAgent(agentId: string): Promise<void> {
+  async deactivateAgent(agentId: string): Promise<{ txHash: string }> {
     const tx = await this.contract.deactivateAgent(agentId);
-    await tx.wait();
+    const receipt = await tx.wait();
+    return { txHash: receipt.hash };
   }
 
-  async reactivateAgent(agentId: string): Promise<void> {
+  async reactivateAgent(agentId: string): Promise<{ txHash: string }> {
     const tx = await this.contract.reactivateAgent(agentId);
-    await tx.wait();
+    const receipt = await tx.wait();
+    return { txHash: receipt.hash };
   }
 
   // -- Target Permissions --
@@ -143,9 +150,10 @@ export class ENShell {
     agentId: string,
     target: string,
     allowed: boolean,
-  ): Promise<void> {
+  ): Promise<{ txHash: string }> {
     const tx = await this.contract.setAllowedTarget(agentId, target, allowed);
-    await tx.wait();
+    const receipt = await tx.wait();
+    return { txHash: receipt.hash };
   }
 
   async isTargetAllowed(agentId: string, target: string): Promise<boolean> {
@@ -176,7 +184,7 @@ export class ENShell {
       try {
         const parsed = iface.parseLog(log);
         if (parsed?.name === "ActionSubmitted") {
-          return { actionId: parsed.args[0] };
+          return { actionId: parsed.args[0], txHash: receipt.hash };
         }
       } catch {
         // Skip logs from other contracts
@@ -188,14 +196,16 @@ export class ENShell {
 
   // -- Ledger Approval (for escalated actions) --
 
-  async approveAction(actionId: bigint): Promise<void> {
+  async approveAction(actionId: bigint): Promise<{ txHash: string }> {
     const tx = await this.contract.approveAction(actionId);
-    await tx.wait();
+    const receipt = await tx.wait();
+    return { txHash: receipt.hash };
   }
 
-  async rejectAction(actionId: bigint): Promise<void> {
+  async rejectAction(actionId: bigint): Promise<{ txHash: string }> {
     const tx = await this.contract.rejectAction(actionId);
-    await tx.wait();
+    const receipt = await tx.wait();
+    return { txHash: receipt.hash };
   }
 
   async getQueuedAction(actionId: bigint): Promise<QueuedAction> {
@@ -255,6 +265,7 @@ export class ENShell {
     // 4. Return result with resolution helper
     return {
       actionId: result.actionId,
+      txHash: result.txHash,
       instructionHash,
       tx: { to: target, value, data },
       waitForResolution: () => this.waitForResolution(result.actionId),
