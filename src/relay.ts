@@ -59,6 +59,7 @@ export class RelayClient {
   async registerAgent(agentId: string, data: {
     ensName: string;
     address: string;
+    owner?: string;
     spendLimit: string;
     active: boolean;
   }): Promise<void> {

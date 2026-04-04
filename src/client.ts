@@ -81,9 +81,11 @@ export class ENShell {
     if (networkConfig.relayUrl) {
       try {
         const relay = new RelayClient(networkConfig.relayUrl);
+        const signerAddress = await this.config.signer.getAddress();
         await relay.registerAgent(agentId, {
           ensName: `${agentId}.${networkConfig.ensParentDomain}`,
           address: options.agentAddress,
+          owner: signerAddress,
           spendLimit: options.spendLimit,
           active: true,
         });
