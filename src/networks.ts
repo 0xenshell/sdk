@@ -26,7 +26,7 @@ export const NETWORK_CONFIG: Record<Network, NetworkConfig> = {
   [Network.SEPOLIA]: {
     chainId: 11155111,
     rpcUrl: "https://rpc.sepolia.org",
-    firewallAddress: "0xf3Bd9464B04a4f44337443144F9241C379d357bb",
+    firewallAddress: "0xF0685c0346DD504D6cB6E1D9958206a51127a663",
     ensParentDomain: "enshell.eth",
     nameWrapperAddress: "0x0635513f179D50A207757E05759CbD106d7dFcE8",
     ensResolverAddress: "0xE99638b40E4Fff0129D56f03b55b6bbC4BBE49b5",

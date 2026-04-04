@@ -23,9 +23,12 @@ describe("contract", () => {
     expect(functionNames).toContain("getAgent");
     expect(functionNames).toContain("getAgentCount");
     expect(functionNames).toContain("submitAction");
+    expect(functionNames).toContain("resolveAction");
     expect(functionNames).toContain("approveAction");
     expect(functionNames).toContain("rejectAction");
     expect(functionNames).toContain("updateThreatScore");
+    expect(functionNames).toContain("checkTrust");
+    expect(functionNames).toContain("isTrusted");
   });
 
   it("ABI includes all expected events", () => {
@@ -42,6 +45,7 @@ describe("contract", () => {
     expect(eventNames).toContain("ActionBlocked");
     expect(eventNames).toContain("ActionEscalated");
     expect(eventNames).toContain("ThreatScoreUpdated");
+    expect(eventNames).toContain("TrustChecked");
   });
 
   it("getFirewallContract returns a contract instance", () => {

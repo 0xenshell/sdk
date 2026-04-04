@@ -22,15 +22,15 @@ export interface RegisterAgentOptions {
 
 // -- Actions --
 
-export enum ActionStatus {
-  APPROVED = 0,
-  ESCALATED = 1,
-  BLOCKED = 2,
+export enum ActionDecision {
+  PENDING = 0,
+  APPROVED = 1,
+  ESCALATED = 2,
+  BLOCKED = 3,
 }
 
 export interface ActionResult {
   actionId: bigint;
-  status: ActionStatus;
 }
 
 export interface QueuedAction {
@@ -38,19 +38,19 @@ export interface QueuedAction {
   target: string;
   value: bigint;
   data: string;
-  instruction: string;
-  threatScore: bigint;
+  instructionHash: string;
   queuedAt: bigint;
   resolved: boolean;
+  decision: number;
 }
 
 export interface ProtectOptions {
+  instruction: string;
   tx: {
     to: string;
     value?: string;
     data?: string;
   };
-  prompt: string;
 }
 
 // -- Client config --

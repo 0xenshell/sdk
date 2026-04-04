@@ -1,4 +1,4 @@
-import { Contract, parseEther } from "ethers";
+import { Contract, parseEther, keccak256, toUtf8Bytes } from "ethers";
 import { getFirewallContract } from "./contract.js";
 import { NETWORK_CONFIG } from "./networks.js";
 import { computeEnsNode, createSubdomain } from "./ens.js";
@@ -9,7 +9,6 @@ import type {
   ActionResult,
   QueuedAction,
 } from "./types.js";
-import { ActionStatus } from "./types.js";
 
 export class ENShell {
   private contract: Contract;
@@ -139,14 +138,14 @@ export class ENShell {
     target: string,
     value: string,
     data: string,
-    instruction: string,
+    instructionHash: string,
   ): Promise<ActionResult> {
     const tx = await this.contract.submitAction(
       agentId,
       target,
       parseEther(value),
       data,
-      instruction,
+      instructionHash,
     );
     const receipt = await tx.wait();
 
@@ -155,24 +154,18 @@ export class ENShell {
     for (const log of receipt.logs) {
       try {
         const parsed = iface.parseLog(log);
-        if (parsed?.name === "ActionApproved") {
-          return { actionId: parsed.args[0], status: ActionStatus.APPROVED };
-        }
-        if (parsed?.name === "ActionEscalated") {
-          return { actionId: parsed.args[0], status: ActionStatus.ESCALATED };
-        }
-        if (parsed?.name === "ActionBlocked") {
-          return { actionId: parsed.args[0], status: ActionStatus.BLOCKED };
+        if (parsed?.name === "ActionSubmitted") {
+          return { actionId: parsed.args[0] };
         }
       } catch {
         // Skip logs from other contracts
       }
     }
 
-    throw new Error("Could not determine action result from transaction logs");
+    throw new Error("Could not determine action ID from transaction logs");
   }
 
-  // -- Ledger Approval --
+  // -- Ledger Approval (for escalated actions) --
 
   async approveAction(actionId: bigint): Promise<void> {
     const tx = await this.contract.approveAction(actionId);
@@ -191,10 +184,16 @@ export class ENShell {
       target: raw.target,
       value: raw.value,
       data: raw.data,
-      instruction: raw.instruction,
-      threatScore: raw.threatScore,
+      instructionHash: raw.instructionHash,
       queuedAt: raw.queuedAt,
       resolved: raw.resolved,
+      decision: Number(raw.decision),
     };
+  }
+
+  // -- Trust Mesh --
+
+  async isTrusted(agentId: string): Promise<boolean> {
+    return this.contract.isTrusted(agentId);
   }
 }
