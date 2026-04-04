@@ -238,6 +238,32 @@ export class ENShell {
     return this.readContract.isTrusted(agentId);
   }
 
+  /**
+   * Check trust between two agents. Emits TrustChecked event on-chain.
+   * Returns whether the target agent is trusted.
+   */
+  async checkTrust(
+    checkerAgentId: string,
+    targetAgentId: string,
+  ): Promise<{ trusted: boolean; txHash: string }> {
+    const tx = await this.contract.checkTrust(checkerAgentId, targetAgentId);
+    const receipt = await tx.wait();
+
+    // Parse the TrustChecked event to get the result
+    const iface = this.contract.interface;
+    let trusted = false;
+    for (const log of receipt.logs) {
+      try {
+        const parsed = iface.parseLog({ topics: log.topics as string[], data: log.data });
+        if (parsed?.name === "TrustChecked") {
+          trusted = parsed.args[4]; // 5th arg is 'trusted'
+        }
+      } catch { /* skip non-matching logs */ }
+    }
+
+    return { trusted, txHash: receipt.hash };
+  }
+
   // -- Protect (core firewall method) --
 
   /**
