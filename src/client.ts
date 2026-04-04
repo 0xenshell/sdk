@@ -38,42 +38,16 @@ export class ENShell {
   // -- Agent Management --
 
   /**
-   * Full registration: creates ENS subdomain + registers on firewall + sets targets.
-   * Use this for a simple one-call flow.
+   * Register an agent. The contract creates the ENS subdomain automatically.
    */
   async registerAgent(
     agentId: string,
     options: RegisterAgentOptions,
-  ): Promise<{ ensTxHash: string; firewallTxHash: string }> {
-    const ens = await this.createAgentSubdomain(agentId);
-    const firewall = await this.registerAgentOnChain(agentId, options);
-    return { ensTxHash: ens.txHash, firewallTxHash: firewall.txHash };
-  }
-
-  /**
-   * Create the ENS subdomain for an agent (e.g. trader.enshell.eth).
-   * Sets the default avatar text record on the subdomain.
-   */
-  async createAgentSubdomain(agentId: string): Promise<{ txHash: string }> {
-    return createSubdomain(agentId, this.config.network, this.config.signer);
-  }
-
-  /**
-   * Register an agent on the firewall contract and set allowed targets.
-   * Call this after createAgentSubdomain() if you want separate steps,
-   * or use registerAgent() for both in one call.
-   */
-  async registerAgentOnChain(
-    agentId: string,
-    options: RegisterAgentOptions,
   ): Promise<{ txHash: string }> {
-    const ensNode = computeEnsNode(agentId, this.config.network);
-
     let txHash: string;
     try {
       const tx = await this.contract.registerAgentSimple(
         agentId,
-        ensNode,
         options.agentAddress,
         parseEther(options.spendLimit),
       );
