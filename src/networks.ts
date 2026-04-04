@@ -30,7 +30,7 @@ export const NETWORK_CONFIG: Record<Network, NetworkConfig> = {
   [Network.SEPOLIA]: {
     chainId: 11155111,
     rpcUrl: "https://ethereum-sepolia-rpc.publicnode.com",
-    firewallAddress: "0x01014560544c786c0409796a504F71bCfbd20D56",
+    firewallAddress: "0x93F0326C4F3a9a2e0209f5faAdFf375493027Cc9",
     relayUrl: "https://relay.enshell.xyz",
     oraclePublicKey: "02cea1f34f52c8e8a2d7d5bf4a768677e600be906fb5c68985fe635ac1331409ca",
     ensParentDomain: "enshell.eth",
