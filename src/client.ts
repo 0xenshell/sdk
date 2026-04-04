@@ -2,12 +2,17 @@ import { Contract, parseEther, keccak256, toUtf8Bytes } from "ethers";
 import { getFirewallContract } from "./contract.js";
 import { NETWORK_CONFIG } from "./networks.js";
 import { computeEnsNode, createSubdomain } from "./ens.js";
+import { encryptForOracle } from "./crypto.js";
+import { RelayClient } from "./relay.js";
+import { ActionDecision } from "./types.js";
 import type {
   ENShellConfig,
   Agent,
   RegisterAgentOptions,
   ActionResult,
   QueuedAction,
+  ProtectOptions,
+  ProtectResult,
 } from "./types.js";
 
 export class ENShell {
@@ -195,5 +200,48 @@ export class ENShell {
 
   async isTrusted(agentId: string): Promise<boolean> {
     return this.contract.isTrusted(agentId);
+  }
+
+  // -- Protect (core firewall method) --
+
+  /**
+   * Submit an action through the ENShell firewall.
+   *
+   * 1. Hashes the instruction
+   * 2. Encrypts the instruction with the CRE oracle's public key
+   * 3. Ships the encrypted payload to the relay
+   * 4. Submits the action to the contract (queued for CRE analysis)
+   * 5. Returns a ProtectResult with a waitForResolution() helper
+   */
+  async protect(
+    agentId: string,
+    options: ProtectOptions,
+  ): Promise<ProtectResult> {
+    const { instruction, tx } = options;
+    const target = tx.to;
+    const value = tx.value ?? "0";
+    const data = tx.data ?? "0x";
+
+    // 1. Hash the instruction
+    const instructionHash = keccak256(toUtf8Bytes(instruction));
+
+    // 2. Encrypt and relay (if oracle public key is configured)
+    if (this.config.oraclePublicKey) {
+      const encrypted = encryptForOracle(instruction, this.config.oraclePublicKey);
+      const networkConfig = NETWORK_CONFIG[this.config.network];
+      const relay = new RelayClient(networkConfig.relayUrl);
+      await relay.put(instructionHash, encrypted);
+    }
+
+    // 3. Submit to contract
+    const result = await this.submitAction(agentId, target, value, data, instructionHash);
+
+    // 4. Return result
+    return {
+      actionId: result.actionId,
+      instructionHash,
+      tx: { to: target, value, data },
+      waitForResolution: async () => ActionDecision.PENDING,
+    };
   }
 }
