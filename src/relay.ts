@@ -74,10 +74,18 @@ export class RelayClient {
   }
 
   /**
-   * Update an agent's active status on the relay.
+   * Update an agent's fields on the relay (partial update).
    */
-  async updateAgentStatus(agentId: string, active: boolean): Promise<void> {
-    await this.registerAgent(agentId, { ensName: "", address: "", spendLimit: "0", active });
+  async updateAgent(agentId: string, data: { active?: boolean }): Promise<void> {
+    const res = await fetch(`${this.baseUrl}/agents/${agentId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok && res.status !== 404) {
+      // Ignore errors - relay is optional
+    }
   }
 
   /**

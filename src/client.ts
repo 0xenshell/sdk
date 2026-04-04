@@ -140,7 +140,7 @@ export class ENShell {
     if (networkConfig.relayUrl) {
       try {
         const relay = new RelayClient(networkConfig.relayUrl);
-        await relay.updateAgentStatus(agentId, false);
+        await relay.updateAgent(agentId, { active: false });
       } catch { /* relay is optional */ }
     }
 
@@ -155,7 +155,7 @@ export class ENShell {
     if (networkConfig.relayUrl) {
       try {
         const relay = new RelayClient(networkConfig.relayUrl);
-        await relay.updateAgentStatus(agentId, true);
+        await relay.updateAgent(agentId, { active: true });
       } catch { /* relay is optional */ }
     }
 
