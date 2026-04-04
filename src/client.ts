@@ -13,6 +13,8 @@ import type {
   QueuedAction,
   ProtectOptions,
   ProtectResult,
+  ResolutionResult,
+  AnalysisResult,
 } from "./types.js";
 
 export class ENShell {
@@ -281,35 +283,52 @@ export class ENShell {
   }
 
   /**
-   * Poll the contract until a queued action is resolved.
-   * Returns the final decision (APPROVED, ESCALATED, or BLOCKED).
-   *
-   * @param actionId - The queued action ID
-   * @param pollIntervalMs - Polling interval in milliseconds (default 5000)
-   * @param timeoutMs - Maximum wait time in milliseconds (default 5 minutes)
+   * Poll the contract until a queued action is resolved by the CRE oracle.
+   * Returns the decision + analysis data for escalated/blocked actions.
+   * For ESCALATED actions, returns immediately (caller handles approval).
    */
   async waitForResolution(
     actionId: bigint,
     pollIntervalMs = 5000,
     timeoutMs = 300_000,
-  ): Promise<ActionDecision> {
+  ): Promise<ResolutionResult> {
     const start = Date.now();
 
     while (Date.now() - start < timeoutMs) {
       const action = await this.getQueuedAction(actionId);
 
       if (action.decision !== ActionDecision.PENDING) {
-        // If escalated but not yet resolved by Ledger, keep polling
-        if (action.decision === ActionDecision.ESCALATED && !action.resolved) {
-          await new Promise((r) => setTimeout(r, pollIntervalMs));
-          continue;
+        const decision = action.decision as ActionDecision;
+        let analysis: AnalysisResult | undefined;
+
+        // Fetch analysis from relay for escalated or blocked actions
+        if (decision === ActionDecision.ESCALATED || decision === ActionDecision.BLOCKED) {
+          analysis = await this.fetchAnalysis(actionId);
         }
-        return action.decision as ActionDecision;
+
+        // For ESCALATED: return immediately — caller handles approval prompt
+        // For APPROVED/BLOCKED: action is already resolved
+        return { decision, analysis };
       }
 
       await new Promise((r) => setTimeout(r, pollIntervalMs));
     }
 
     throw new Error(`Action #${actionId} resolution timed out after ${timeoutMs / 1000}s`);
+  }
+
+  /** Fetch CRE analysis from the relay for a given action. */
+  private async fetchAnalysis(actionId: bigint): Promise<AnalysisResult | undefined> {
+    const networkConfig = NETWORK_CONFIG[this.config.network];
+    if (!networkConfig.relayUrl) return undefined;
+
+    try {
+      const relay = new RelayClient(networkConfig.relayUrl);
+      const res = await fetch(`${networkConfig.relayUrl}/analysis/${actionId}`);
+      if (!res.ok) return undefined;
+      return await res.json() as AnalysisResult;
+    } catch {
+      return undefined;
+    }
   }
 }

@@ -19,5 +19,7 @@ export type {
   QueuedAction,
   ProtectOptions,
   ProtectResult,
+  ResolutionResult,
+  AnalysisResult,
   ENShellConfig,
 } from "./types.js";
