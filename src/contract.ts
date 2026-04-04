@@ -10,6 +10,7 @@ export const AGENT_FIREWALL_ABI = [
   "function registerAgentSimple(string agentId, address agentAddress, uint256 spendLimit) external",
   "function getAgent(string agentId) external view returns (tuple(bytes32 ensNode, address agentAddress, address owner, uint256 spendLimit, uint256 threatScore, uint256 strikes, bool active, bool worldIdVerified, uint256 registeredAt))",
   "function getAgentCount() external view returns (uint256)",
+  "function agentIds(uint256) external view returns (string)",
 
   // Agent lifecycle
   "function deactivateAgent(string agentId) external",
