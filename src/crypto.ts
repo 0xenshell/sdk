@@ -1,39 +1,87 @@
-import { encrypt, decrypt, PrivateKey } from "eciesjs";
+import { getPublicKey, getSharedSecret, utils } from "@noble/secp256k1";
+// @ts-ignore - noble v2 uses subpath exports with .js extension
+import { gcm } from "@noble/ciphers/aes.js";
+// @ts-ignore - noble v2 uses subpath exports with .js extension
+import { sha256 } from "@noble/hashes/sha2.js";
 
 /**
- * Encrypt a plaintext string with a secp256k1 public key using ECIES.
- * Used to encrypt instruction payloads for the CRE oracle.
+ * Custom ECIES implementation using noble-crypto primitives.
+ * Works in Node.js, browsers, and CRE WASM (QuickJS).
  *
- * @param plaintext - The instruction text to encrypt
- * @param publicKeyHex - The recipient's secp256k1 public key (hex, compressed or uncompressed)
- * @returns Hex-encoded encrypted payload
+ * Encryption flow:
+ *   1. Generate ephemeral secp256k1 keypair
+ *   2. ECDH with recipient's public key → shared secret
+ *   3. SHA-256(shared secret) → AES-256-GCM key
+ *   4. Encrypt plaintext with AES-256-GCM
+ *   5. Output: ephemeral public key (33 bytes) + nonce (12 bytes) + ciphertext
+ */
+
+function hexToBytes(hex: string): Uint8Array {
+  const clean = hex.replace("0x", "");
+  const bytes = new Uint8Array(clean.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(clean.substring(i * 2, i * 2 + 2), 16);
+  }
+  return bytes;
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/**
+ * Encrypt a plaintext string with a secp256k1 public key.
+ * The oracle's public key is hardcoded in network config (safe to ship publicly).
+ * Only the oracle's private key (in Vault DON) can decrypt.
  */
 export function encryptForOracle(plaintext: string, publicKeyHex: string): string {
-  const data = Buffer.from(plaintext, "utf-8");
-  const encrypted = encrypt(publicKeyHex, data);
-  return "0x" + Buffer.from(encrypted).toString("hex");
+  const ephemeralPrivate = utils.randomSecretKey();
+  const ephemeralPublic = getPublicKey(ephemeralPrivate, true); // compressed, 33 bytes
+
+  const sharedSecret = getSharedSecret(ephemeralPrivate, hexToBytes(publicKeyHex));
+  const aesKey = sha256(sharedSecret);
+
+  const nonce = new Uint8Array(12);
+  crypto.getRandomValues(nonce);
+
+  const cipher = gcm(aesKey, nonce);
+  const ciphertext = cipher.encrypt(new TextEncoder().encode(plaintext));
+
+  // Pack: ephemeralPublic (33) + nonce (12) + ciphertext (variable)
+  const packed = new Uint8Array(33 + 12 + ciphertext.length);
+  packed.set(ephemeralPublic, 0);
+  packed.set(nonce, 33);
+  packed.set(ciphertext, 45);
+
+  return "0x" + bytesToHex(packed);
 }
 
 /**
  * Decrypt an ECIES-encrypted payload with a secp256k1 private key.
- * Used by the CRE oracle to decrypt instruction payloads inside the TEE.
- *
- * @param encryptedHex - Hex-encoded encrypted payload (with 0x prefix)
- * @param privateKeyHex - The recipient's secp256k1 private key (hex)
- * @returns Decrypted plaintext string
+ * Used by the CRE oracle inside the TEE.
  */
 export function decryptAsOracle(encryptedHex: string, privateKeyHex: string): string {
-  const data = Buffer.from(encryptedHex.replace("0x", ""), "hex");
-  const sk = new PrivateKey(Buffer.from(privateKeyHex.replace("0x", ""), "hex"));
-  const decrypted = decrypt(sk.secret, data);
-  return Buffer.from(decrypted).toString("utf-8");
+  const packed = hexToBytes(encryptedHex);
+
+  const ephemeralPublic = packed.slice(0, 33);
+  const nonce = packed.slice(33, 45);
+  const ciphertext = packed.slice(45);
+
+  const sharedSecret = getSharedSecret(hexToBytes(privateKeyHex), ephemeralPublic);
+  const aesKey = sha256(sharedSecret);
+
+  const decipher = gcm(aesKey, nonce);
+  const decrypted = decipher.decrypt(ciphertext);
+
+  return new TextDecoder().decode(decrypted);
 }
 
 /**
  * Derive the compressed public key from a private key.
- * Useful for getting the oracle's public key from its private key.
  */
 export function getPublicKeyFromPrivate(privateKeyHex: string): string {
-  const sk = new PrivateKey(Buffer.from(privateKeyHex.replace("0x", ""), "hex"));
-  return sk.publicKey.toHex();
+  const pub = getPublicKey(hexToBytes(privateKeyHex), true);
+  return bytesToHex(pub);
 }
