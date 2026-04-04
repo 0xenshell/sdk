@@ -54,6 +54,26 @@ export class RelayClient {
   }
 
   /**
+   * Register an agent on the relay for dashboard display.
+   */
+  async registerAgent(agentId: string, data: {
+    ensName: string;
+    address: string;
+    spendLimit: string;
+    active: boolean;
+  }): Promise<void> {
+    const res = await fetch(`${this.baseUrl}/agents/${agentId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok && res.status !== 409) {
+      // Ignore errors - relay is optional for agent registration
+    }
+  }
+
+  /**
    * Health check on the relay service.
    */
   async health(): Promise<{ status: string; entries: number }> {
