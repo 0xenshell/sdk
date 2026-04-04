@@ -225,10 +225,10 @@ export class ENShell {
     // 1. Hash the instruction
     const instructionHash = keccak256(toUtf8Bytes(instruction));
 
-    // 2. Encrypt and relay (if oracle public key is configured)
-    if (this.config.oraclePublicKey) {
-      const encrypted = encryptForOracle(instruction, this.config.oraclePublicKey);
-      const networkConfig = NETWORK_CONFIG[this.config.network];
+    // 2. Encrypt and ship to relay
+    const networkConfig = NETWORK_CONFIG[this.config.network];
+    if (networkConfig.oraclePublicKey && networkConfig.relayUrl) {
+      const encrypted = encryptForOracle(instruction, networkConfig.oraclePublicKey);
       const relay = new RelayClient(networkConfig.relayUrl);
       await relay.put(instructionHash, encrypted);
     }

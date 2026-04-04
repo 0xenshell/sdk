@@ -73,6 +73,4 @@ export interface ENShellConfig {
   network: Network;
   signer: Signer;
   contractAddress?: string;
-  /** Compressed secp256k1 public key of the CRE oracle (hex). Used to encrypt instructions. */
-  oraclePublicKey?: string;
 }
