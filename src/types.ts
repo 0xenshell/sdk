@@ -6,6 +6,7 @@ import type { Network } from "./networks.js";
 export interface Agent {
   ensNode: string;
   agentAddress: string;
+  owner: string;
   spendLimit: bigint;
   threatScore: bigint;
   strikes: bigint;

@@ -93,6 +93,7 @@ export class ENShell {
     return {
       ensNode: raw.ensNode,
       agentAddress: raw.agentAddress,
+      owner: raw.owner,
       spendLimit: raw.spendLimit,
       threatScore: raw.threatScore,
       strikes: raw.strikes,

@@ -8,7 +8,7 @@ import { Contract, type Signer, type Provider } from "ethers";
 export const AGENT_FIREWALL_ABI = [
   // Agent registration
   "function registerAgentSimple(string agentId, address agentAddress, uint256 spendLimit) external",
-  "function getAgent(string agentId) external view returns (tuple(bytes32 ensNode, address agentAddress, uint256 spendLimit, uint256 threatScore, uint256 strikes, bool active, bool worldIdVerified, uint256 registeredAt))",
+  "function getAgent(string agentId) external view returns (tuple(bytes32 ensNode, address agentAddress, address owner, uint256 spendLimit, uint256 threatScore, uint256 strikes, bool active, bool worldIdVerified, uint256 registeredAt))",
   "function getAgentCount() external view returns (uint256)",
 
   // Agent lifecycle
@@ -44,7 +44,7 @@ export const AGENT_FIREWALL_ABI = [
   "function setENSResolver(address _ensResolver) external",
 
   // Events
-  "event AgentRegistered(string indexed agentId, bytes32 ensNode, address agentAddress, uint256 spendLimit, bool worldIdVerified)",
+  "event AgentRegistered(string indexed agentId, bytes32 ensNode, address owner, address agentAddress, uint256 spendLimit, bool worldIdVerified)",
   "event AgentDeactivated(string indexed agentId, string reason)",
   "event AllowedTargetUpdated(string indexed agentId, address target, bool allowed)",
   "event ActionSubmitted(uint256 indexed actionId, string indexed agentId, address target, uint256 value, bytes32 instructionHash)",
