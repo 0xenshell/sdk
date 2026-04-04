@@ -7,6 +7,8 @@ export { computeEnsNode, createSubdomain } from "./ens.js";
 
 export { ENShell } from "./client.js";
 
+export { encryptForOracle, decryptAsOracle, getPublicKeyFromPrivate } from "./crypto.js";
+
 export { ActionDecision } from "./types.js";
 export type {
   Agent,

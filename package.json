@@ -15,6 +15,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
+    "eciesjs": "^0.5.0",
     "ethers": "^6.15.0"
   },
   "publishConfig": {
