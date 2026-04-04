@@ -24,15 +24,13 @@ export const AGENT_FIREWALL_ABI = [
   "function submitAction(string agentId, address target, uint256 value, bytes data, bytes32 instructionHash) external returns (uint256 actionId)",
   "function getQueuedAction(uint256 actionId) external view returns (tuple(string agentId, address target, uint256 value, bytes data, bytes32 instructionHash, uint256 queuedAt, bool resolved, uint8 decision))",
 
-  // CRE oracle resolution
-  "function resolveAction(uint256 actionId, uint8 decision) external",
+  // CRE report receiver
+  "function onReport(bytes metadata, bytes report) external",
+  "function supportsInterface(bytes4 interfaceId) external pure returns (bool)",
 
   // Ledger approval (for escalated actions only)
   "function approveAction(uint256 actionId) external",
   "function rejectAction(uint256 actionId) external",
-
-  // Threat scores
-  "function updateThreatScore(string agentId, uint256 rawScore) external",
 
   // Trust mesh
   "function checkTrust(string checkerAgentId, string targetAgentId) external returns (bool)",
@@ -42,7 +40,7 @@ export const AGENT_FIREWALL_ABI = [
   "function setMaxStrikes(uint256 _max) external",
   "function setBlockThreshold(uint256 _threshold) external",
   "function setEscalateThreshold(uint256 _threshold) external",
-  "function setCreOracle(address _creOracle) external",
+  "function setForwarder(address _forwarder) external",
   "function setENSResolver(address _ensResolver) external",
 
   // Events

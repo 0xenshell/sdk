@@ -23,10 +23,9 @@ describe("contract", () => {
     expect(functionNames).toContain("getAgent");
     expect(functionNames).toContain("getAgentCount");
     expect(functionNames).toContain("submitAction");
-    expect(functionNames).toContain("resolveAction");
+    expect(functionNames).toContain("onReport");
     expect(functionNames).toContain("approveAction");
     expect(functionNames).toContain("rejectAction");
-    expect(functionNames).toContain("updateThreatScore");
     expect(functionNames).toContain("checkTrust");
     expect(functionNames).toContain("isTrusted");
   });
