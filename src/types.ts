@@ -31,6 +31,7 @@ export enum ActionDecision {
 
 export interface ActionResult {
   actionId: bigint;
+  txHash: string;
 }
 
 export interface QueuedAction {
@@ -57,6 +58,7 @@ export interface ProtectOptions {
 
 export interface ProtectResult {
   actionId: bigint;
+  txHash: string;
   instructionHash: string;
   tx: {
     to: string;
