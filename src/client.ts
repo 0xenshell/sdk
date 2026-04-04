@@ -1,4 +1,4 @@
-import { Contract, parseEther, keccak256, toUtf8Bytes } from "ethers";
+import { Contract, JsonRpcProvider, parseEther, keccak256, toUtf8Bytes } from "ethers";
 import { getFirewallContract } from "./contract.js";
 import { NETWORK_CONFIG } from "./networks.js";
 import { computeEnsNode, createSubdomain } from "./ens.js";
@@ -17,14 +17,14 @@ import type {
 
 export class ENShell {
   private contract: Contract;
+  private readContract: Contract;
   private config: ENShellConfig;
 
   constructor(config: ENShellConfig) {
     this.config = config;
 
-    const address =
-      config.contractAddress ??
-      NETWORK_CONFIG[config.network].firewallAddress;
+    const networkConfig = NETWORK_CONFIG[config.network];
+    const address = config.contractAddress ?? networkConfig.firewallAddress;
 
     if (!address) {
       throw new Error(
@@ -33,6 +33,11 @@ export class ENShell {
     }
 
     this.contract = getFirewallContract(address, config.signer);
+
+    // Separate read-only provider for view calls (avoids WalletConnect eth_call issues)
+    const rpcUrl = config.rpcUrl ?? networkConfig.rpcUrl;
+    const readProvider = new JsonRpcProvider(rpcUrl);
+    this.readContract = getFirewallContract(address, readProvider);
   }
 
   // -- Agent Management --
@@ -89,7 +94,7 @@ export class ENShell {
   }
 
   async getAgent(agentId: string): Promise<Agent> {
-    const raw = await this.contract.getAgent(agentId);
+    const raw = await this.readContract.getAgent(agentId);
     return {
       ensNode: raw.ensNode,
       agentAddress: raw.agentAddress,
@@ -104,7 +109,7 @@ export class ENShell {
   }
 
   async getAgentCount(): Promise<bigint> {
-    return this.contract.getAgentCount();
+    return this.readContract.getAgentCount();
   }
 
   async deactivateAgent(agentId: string): Promise<{ txHash: string }> {
@@ -160,7 +165,7 @@ export class ENShell {
   }
 
   async isTargetAllowed(agentId: string, target: string): Promise<boolean> {
-    return this.contract.isTargetAllowed(agentId, target);
+    return this.readContract.isTargetAllowed(agentId, target);
   }
 
   // -- Action Submission --
@@ -212,7 +217,7 @@ export class ENShell {
   }
 
   async getQueuedAction(actionId: bigint): Promise<QueuedAction> {
-    const raw = await this.contract.getQueuedAction(actionId);
+    const raw = await this.readContract.getQueuedAction(actionId);
     return {
       agentId: raw.agentId,
       target: raw.target,
@@ -228,7 +233,7 @@ export class ENShell {
   // -- Trust Mesh --
 
   async isTrusted(agentId: string): Promise<boolean> {
-    return this.contract.isTrusted(agentId);
+    return this.readContract.isTrusted(agentId);
   }
 
   // -- Protect (core firewall method) --
