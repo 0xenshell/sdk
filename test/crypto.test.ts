@@ -1,11 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { encryptForOracle, decryptAsOracle, getPublicKeyFromPrivate } from "../src/crypto.js";
-import { PrivateKey } from "eciesjs";
+import { utils, getPublicKey } from "@noble/secp256k1";
 
 describe("crypto", () => {
-  const sk = new PrivateKey();
-  const privateKeyHex = Buffer.from(sk.secret).toString("hex");
-  const publicKeyHex = sk.publicKey.toHex();
+  const privateKeyBytes = utils.randomSecretKey();
+  const privateKeyHex = Array.from(privateKeyBytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+  const publicKeyBytes = getPublicKey(privateKeyBytes, true);
+  const publicKeyHex = Array.from(publicKeyBytes).map((b) => b.toString(16).padStart(2, "0")).join("");
 
   it("encrypts and decrypts a message roundtrip", () => {
     const message = "Send 0.05 ETH to the treasury for weekly budget";
@@ -22,7 +23,7 @@ describe("crypto", () => {
     const message = "Same message twice";
     const a = encryptForOracle(message, publicKeyHex);
     const b = encryptForOracle(message, publicKeyHex);
-    expect(a).not.toBe(b); // ECIES uses random ephemeral keys
+    expect(a).not.toBe(b);
   });
 
   it("derives correct public key from private key", () => {
@@ -34,8 +35,8 @@ describe("crypto", () => {
     const message = "Secret instruction";
     const encrypted = encryptForOracle(message, publicKeyHex);
 
-    const wrongSk = new PrivateKey();
-    const wrongKeyHex = Buffer.from(wrongSk.secret).toString("hex");
+    const wrongKeyBytes = utils.randomSecretKey();
+    const wrongKeyHex = Array.from(wrongKeyBytes).map((b) => b.toString(16).padStart(2, "0")).join("");
 
     expect(() => decryptAsOracle(encrypted, wrongKeyHex)).toThrow();
   });
