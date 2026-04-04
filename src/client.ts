@@ -133,6 +133,11 @@ export class ENShell {
   }
 
   async deactivateAgent(agentId: string): Promise<{ txHash: string }> {
+    const agent = await this.getAgent(agentId);
+    if (!agent.active) {
+      throw new Error(`Agent "${agentId}" is already deactivated`);
+    }
+
     const tx = await this.contract.deactivateAgent(agentId);
     const receipt = await tx.wait();
 
@@ -148,6 +153,11 @@ export class ENShell {
   }
 
   async reactivateAgent(agentId: string): Promise<{ txHash: string }> {
+    const agent = await this.getAgent(agentId);
+    if (agent.active) {
+      throw new Error(`Agent "${agentId}" is already active`);
+    }
+
     const tx = await this.contract.reactivateAgent(agentId);
     const receipt = await tx.wait();
 
