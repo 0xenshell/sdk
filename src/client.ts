@@ -236,12 +236,45 @@ export class ENShell {
     // 3. Submit to contract
     const result = await this.submitAction(agentId, target, value, data, instructionHash);
 
-    // 4. Return result
+    // 4. Return result with resolution helper
     return {
       actionId: result.actionId,
       instructionHash,
       tx: { to: target, value, data },
-      waitForResolution: async () => ActionDecision.PENDING,
+      waitForResolution: () => this.waitForResolution(result.actionId),
     };
+  }
+
+  /**
+   * Poll the contract until a queued action is resolved.
+   * Returns the final decision (APPROVED, ESCALATED, or BLOCKED).
+   *
+   * @param actionId - The queued action ID
+   * @param pollIntervalMs - Polling interval in milliseconds (default 5000)
+   * @param timeoutMs - Maximum wait time in milliseconds (default 5 minutes)
+   */
+  async waitForResolution(
+    actionId: bigint,
+    pollIntervalMs = 5000,
+    timeoutMs = 300_000,
+  ): Promise<ActionDecision> {
+    const start = Date.now();
+
+    while (Date.now() - start < timeoutMs) {
+      const action = await this.getQueuedAction(actionId);
+
+      if (action.decision !== ActionDecision.PENDING) {
+        // If escalated but not yet resolved by Ledger, keep polling
+        if (action.decision === ActionDecision.ESCALATED && !action.resolved) {
+          await new Promise((r) => setTimeout(r, pollIntervalMs));
+          continue;
+        }
+        return action.decision as ActionDecision;
+      }
+
+      await new Promise((r) => setTimeout(r, pollIntervalMs));
+    }
+
+    throw new Error(`Action #${actionId} resolution timed out after ${timeoutMs / 1000}s`);
   }
 }
