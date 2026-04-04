@@ -74,6 +74,13 @@ export class RelayClient {
   }
 
   /**
+   * Update an agent's active status on the relay.
+   */
+  async updateAgentStatus(agentId: string, active: boolean): Promise<void> {
+    await this.registerAgent(agentId, { ensName: "", address: "", spendLimit: "0", active });
+  }
+
+  /**
    * Health check on the relay service.
    */
   async health(): Promise<{ status: string; entries: number }> {

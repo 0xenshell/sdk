@@ -135,12 +135,30 @@ export class ENShell {
   async deactivateAgent(agentId: string): Promise<{ txHash: string }> {
     const tx = await this.contract.deactivateAgent(agentId);
     const receipt = await tx.wait();
+
+    const networkConfig = NETWORK_CONFIG[this.config.network];
+    if (networkConfig.relayUrl) {
+      try {
+        const relay = new RelayClient(networkConfig.relayUrl);
+        await relay.updateAgentStatus(agentId, false);
+      } catch { /* relay is optional */ }
+    }
+
     return { txHash: receipt.hash };
   }
 
   async reactivateAgent(agentId: string): Promise<{ txHash: string }> {
     const tx = await this.contract.reactivateAgent(agentId);
     const receipt = await tx.wait();
+
+    const networkConfig = NETWORK_CONFIG[this.config.network];
+    if (networkConfig.relayUrl) {
+      try {
+        const relay = new RelayClient(networkConfig.relayUrl);
+        await relay.updateAgentStatus(agentId, true);
+      } catch { /* relay is optional */ }
+    }
+
     return { txHash: receipt.hash };
   }
 
