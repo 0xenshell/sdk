@@ -91,6 +91,22 @@ export class ENShell {
       );
       await targetTx.wait();
     }
+
+    // Post agent info to relay for dashboard display
+    const networkConfig = NETWORK_CONFIG[this.config.network];
+    if (networkConfig.relayUrl) {
+      try {
+        const relay = new RelayClient(networkConfig.relayUrl);
+        await relay.registerAgent(agentId, {
+          ensName: `${agentId}.${networkConfig.ensParentDomain}`,
+          address: options.agentAddress,
+          spendLimit: options.spendLimit,
+          active: true,
+        });
+      } catch {
+        // Relay is optional - don't fail registration if relay is down
+      }
+    }
   }
 
   async getAgent(agentId: string): Promise<Agent> {
