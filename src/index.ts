@@ -9,6 +9,8 @@ export { ENShell } from "./client.js";
 
 export { encryptForOracle, decryptAsOracle, getPublicKeyFromPrivate } from "./crypto.js";
 
+export { RelayClient } from "./relay.js";
+
 export { ActionDecision } from "./types.js";
 export type {
   Agent,
