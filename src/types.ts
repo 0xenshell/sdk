@@ -44,6 +44,8 @@ export interface QueuedAction {
   decision: number;
 }
 
+// -- Protect --
+
 export interface ProtectOptions {
   instruction: string;
   tx: {
@@ -53,13 +55,24 @@ export interface ProtectOptions {
   };
 }
 
+export interface ProtectResult {
+  actionId: bigint;
+  instructionHash: string;
+  tx: {
+    to: string;
+    value: string;
+    data: string;
+  };
+  /** Wait for the CRE oracle to resolve the action. Polls the contract. */
+  waitForResolution: () => Promise<ActionDecision>;
+}
+
 // -- Client config --
 
 export interface ENShellConfig {
   network: Network;
   signer: Signer;
   contractAddress?: string;
-  onApproved?: (action: ActionResult) => Promise<void>;
-  onEscalated?: (action: ActionResult) => Promise<void>;
-  onBlocked?: (action: ActionResult) => Promise<void>;
+  /** Compressed secp256k1 public key of the CRE oracle (hex). Used to encrypt instructions. */
+  oraclePublicKey?: string;
 }
