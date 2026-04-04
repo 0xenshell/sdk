@@ -28,7 +28,7 @@ describe("networks", () => {
 
   it("has Sepolia firewall address configured", () => {
     expect(NETWORK_CONFIG[Network.SEPOLIA].firewallAddress).toBe(
-      "0x93F0326C4F3A9a2e0209f5faAdFf375493027Cc9",
+      "0xf78910b66AE2f7E33038578e1500b157776a0597",
     );
   });
 });
