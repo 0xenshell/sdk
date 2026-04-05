@@ -1,6 +1,9 @@
 # ENShell SDK
 
 [![codecov](https://codecov.io/gh/0xenshell/sdk/graph/badge.svg?token=W8JIFQD4P0)](https://codecov.io/gh/0xenshell/sdk)
+[![CodeQuill – Verified authorship](https://app.codequill.xyz/badges/claim/f179dc27-ddcc-4323-9446-442763ae6969)](https://app.codequill.xyz/explore/0xenshell/sdk)
+[![CodeQuill – Latest snapshot](https://app.codequill.xyz/badges/snapshot/f179dc27-ddcc-4323-9446-442763ae6969)](https://app.codequill.xyz/explore/0xenshell/sdk)
+[![CodeQuill Trust Index](https://app.codequill.xyz/badges/trust/f179dc27-ddcc-4323-9446-442763ae6969)](https://app.codequill.xyz/explore/0xenshell/sdk)
 
 Core SDK for **ENShell**, an on-chain firewall for AI agents. Provides a typed client to register agents, submit actions through the firewall, manage target permissions, and handle Ledger approvals. Built on ethers.js v6.
 
